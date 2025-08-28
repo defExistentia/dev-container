@@ -1,0 +1,44 @@
+version: 1
+name: ubi9-podman-dev
+description: "RHEL UBI9 Devcontainer with Podman (Docker-compatible)"
+
+workspace:
+  # The container image we built
+  container:
+    image: ghcr.io/your-org/ubi9-podman-dev:latest
+    # Or "registry.access.redhat.com/ubi9:9.6" if you don’t prebuild
+    memory: 4Gi
+    cpu: 2
+    working_directory: /home/coder
+
+  # Networking & mounts
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+
+  # Default user
+  user: coder
+
+  # Environment variables
+  env:
+    SHELL: "/bin/bash"
+    LANG: "en_US.UTF-8"
+    LC_ALL: "en_US.UTF-8"
+
+# Startup scripts
+lifecycle:
+  on_create:
+    - name: Setup Podman alias for Docker
+      command: |
+        echo "alias docker=podman" >> /home/coder/.bashrc
+        echo "alias docker=podman" >> /home/coder/.zshrc
+
+  on_start:
+    - name: Start Podman socket (dockerd compatibility)
+      command: |
+        systemctl --user enable --now podman.socket || true
+        podman system service -t 0 unix:///run/user/1000/podman/podman.sock &
